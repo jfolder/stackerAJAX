@@ -6,6 +6,12 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$('.inspiration-getter').submit(function(event) {
+		$('.results').html('');
+		var topic = $(this).find("input[name='answerers']").val();
+		getTopAnswerers(topic);
+	});
 });
 
 // this function takes the question object returned by StackOverflow 
@@ -41,6 +47,25 @@ var showQuestion = function(question) {
 	return result;
 };
 
+var showAnswerers = function(theItem) {
+	var result = $(".templates .answerer").clone();
+
+	var theirName = result.find(".display_name");
+	theirName.text("username: " + theItem.user.display_name);
+
+	var theirReputation = result.find(".reputation");
+	theirReputation.text("Reputation = " + theItem.user.reputation);
+
+	var theirPostCount = result.find(".post_count");
+	theirPostCount.text("Post Count = " + theItem.post_count);
+
+	var theirLink = result.find(".link a");
+	theirLink.attr("href", theItem.user.link);
+	theirLink.text(theItem.user.link);
+
+	return result;
+}
+
 
 // this function takes the results object from StackOverflow
 // and creates info about search results to be appended to DOM
@@ -74,9 +99,9 @@ var getUnanswered = function(tags) {
 		})
 	.done(function(result){
 		var searchResults = showSearchResults(request.tagged, result.items.length);
-
 		$('.search-results').html(searchResults);
 
+		
 		$.each(result.items, function(i, item) {
 			var question = showQuestion(item);
 			$('.results').append(question);
@@ -89,4 +114,32 @@ var getUnanswered = function(tags) {
 };
 
 
+var getTopAnswerers = function(topic) {
+	
+	// the parameters we need to pass in our request to StackOverflow's API
+	var request = {tag: topic,
+		      pagesize: 10,
+		        period: 'all_time'};
+	
 
+	var result = $.ajax({
+		url: "http://api.stackexchange.com/2.2/tags/" + topic + "/top-answerers/all_time?site=stackoverflow",
+		data: request,
+		dataType: "jsonp",
+		type: "GET",
+		})
+	.done(function(result){
+
+		var searchResults = showSearchResults(request.tag, result.items.length);
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, item) {
+			var topPerson = showAnswerers(item);
+			$('.results').append(topPerson);
+		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
